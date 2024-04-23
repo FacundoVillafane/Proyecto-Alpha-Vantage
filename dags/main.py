@@ -20,14 +20,9 @@ import ssl
 import smtplib
 
 
-username='facundo_villafane_59_coderhouse'
-password='p8658bXK6I'
-host='data-engineer-cluster.cyhh5bfevlmn.us-east-1.redshift.amazonaws.com'
-database='data-engineer-database'
-function = 'TIME_SERIES_DAILY'
-companies=['YPF','GOOG','KO']
-#key='6UUVKQTY9GOWIFGO'
-key='098AEGLV1E975GFV'
+
+
+
 
 def import_transform_alphavantage_data(company,function, key,send, mensaje,ti):
     url = 'https://www.alphavantage.co/query?function='+function+'&symbol='+company+'&apikey='+key
@@ -54,13 +49,14 @@ def get_data_store(ti):
     df = pd.DataFrame()
     send=False
     mensaje=''
+    companies=['YPF','GOOG','KO']
     for company in companies:
-        df=pd.concat([import_transform_alphavantage_data(company,function,key, send, mensaje,ti),df])
+        df=pd.concat([import_transform_alphavantage_data(company,Variable.get("API_FUNCTION"),Variable.get("SECRET_API_KEY"), send, mensaje,ti),df])
         df['Timestamp'] = pd.Timestamp("now") 
         send=ti.xcom_pull(key='send',task_ids='download_data')
         mensaje=ti.xcom_pull(key='mensaje',task_ids='download_data')
         print(mensaje)
-    conn = create_engine('postgresql://'+username+':'+password+'@'+host+':5439/'+database)
+    conn = create_engine('postgresql://'+Variable.get("SECRET_DATABASE_USERNAME")+':'+Variable.get("SECRET_DATABASE_PASSWORD")+'@'+Variable.get("DATABASE_HOST")+':5439/'+Variable.get("DATABASE_NAME"))
     df.to_sql('alpha_vantage_shares', conn, index=False, if_exists='replace')
     ti.xcom_push(key='send',value=send)
     ti.xcom_push(key='mensaje',value=mensaje)
